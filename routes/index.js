@@ -272,6 +272,8 @@ function getC19n() {
 			console.log(sources[i].clearance + sources[i].linkedTriangleId)
 			console.log(circles[sources[i].clearance + sources[i].linkedTriangleId])
 
+			var circle = circles[sources[i].clearance + sources[i].linkedTriangleId] ? circles[sources[i].clearance + sources[i].linkedTriangleId]._id : null;
+
 			Source.findOneAndUpdate({
 				sourceId: sources[i].id
 			}, {
@@ -279,7 +281,7 @@ function getC19n() {
 				name: sources[i].name,
 				circleName: sources[i].clearance + sources[i].linkedTriangleId,
 				circleType: 'c19n',
-				circle: circles[sources[i].clearance + sources[i].linkedTriangleId]._id,
+				circle: circle,
 				classification: sources[i].classification
 			}, {
 				upsert: true
