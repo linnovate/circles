@@ -134,7 +134,7 @@ function getC19nGroups() {
 	}];
 
 	for (var i = 0; i < groups.length; i++) {
-		circles.registerCircles(groups[i].name, groups[i].type, null, groups[i].isActive);
+		circles.registerCircles(groups[i]);
 	}
 };
 
@@ -303,7 +303,7 @@ function getC19n() {
 
 function saveCircle(i, triangleId, clearances, parents) {
 	if (clearances[i]) {
-		circles.registerCircles(clearances[i] + triangleId, 'c19n', parents, true, function(err, circle) {
+		circles.registerCircles({id:clearances[i] + triangleId, type:'c19n', parents:parents, isActive:true}, function(err, circle) {
 			if (err) return;
 			saveCircle(i + 1, triangleId, clearances, [circle._id]);
 		});

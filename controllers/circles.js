@@ -299,11 +299,14 @@ module.exports = function(Circles, app) {
 				}
 			}
 			getSources(req, function(sources) {
-				return res.json({
-					allowed: req.acl.user.allowed,
-					descendants: descendants,
-					sources: sources
-				});
+				var response = {
+					allowed: (req.query.type ? req.acl.user.allowed[req.query.type] : req.acl.user.allowed),
+					descendants: (req.query.type ? descendants[req.query.type] : descendants),
+				}
+				if (sources.length) {
+					response.sources = sources;
+				}
+				return res.json(response);
 			});
 		},
 		all: function(req, res) {
@@ -448,19 +451,23 @@ module.exports = function(Circles, app) {
 				next();
 			};
 		},
-		registerCircles: function(circle, circleType, parents, isActive, callback) {
+		registerCircles: function(circle, callback) {
 			if (typeof(isActive) !== 'boolean') isActive = true;
 			var query = {
-				name: circle,
-				circleType: circleType,
-				isActive: isActive
+				circleType: circle.type,
+				isActive: circle.isActive,
+				circleId: circle.id
 			};
+			
+			if (circle.name) {
+				query.name = circle.name;
+			}
 
 			var set = {};
-			if (parents) {
+			if (circle.parents) {
 				set.$addToSet = {
 					circles: {
-						$each: parents
+						$each: circle.parents
 					}
 				};
 			}
@@ -515,11 +522,11 @@ function validParents(parents, circles) {
 
 function getSources(req, callback) {
 	var conditions = {};
-	if (!req.query.type) req.query.type = 'c19n';
-	conditions.circleType = req.query.type;
+	var type = req.query.type || 'c19n';
+	conditions.circleType = type;
 	if (req.query.user)
 		conditions.circleName = {
-			$in: req.acl.user.allowed[req.query.type].map(function(circle) {
+			$in: req.acl.user.allowed[type].map(function(circle) {
 				return circle.name
 			})
 		};

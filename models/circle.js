@@ -17,6 +17,7 @@ var CircleSchema = new Schema({
     type: String,
     required: true
   },
+  circleId: String,
   circles: [String],
   circleType: String,
   isActive: {
