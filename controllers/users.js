@@ -149,6 +149,31 @@ var self = {
             console.log(err, numberAffected, raw);
         });
         res.json(req.circle);
+    },
+    upsert: function(req, res) {
+        User.findOne({
+            id: req.params.userId
+        }, function(err, user) {
+            if (err || user) {
+                res.json({
+                    err: err,
+                    user: user
+                })
+            } else {
+                getRandomCircles(function(circles) {
+                    var user = new User({
+                        id: req.params.userId,
+                        circles: circles
+                    });
+                    user.save(function(err, user) {
+                        res.json({
+                            err: err,
+                            user: user
+                        });
+                    });
+                });
+            }
+        });
     }
     // ,
     // renameCircleOfUsers: function(req, res, next) {
@@ -171,6 +196,25 @@ var self = {
     //     });
     //     res.json(req.circle);
     // }
+}
+var Circle = mongoose.model('Circle');
+var getRandomCircles = function(callback) {
+    Circle.find().exec(function(err, circles) {
+        var obj = {};
+        for (var i = 0; i < circles.length; i++) {
+            if (!obj[circles[i].circleType]) {
+                obj[circles[i].circleType] = [];
+            }
+            obj[circles[i].circleType].push(circles[i]._id);
+        }
+        var myCircles = {};
+        for (var type in config.settings.circleTypes) {
+            if (type !== 'personal') {
+                myCircles[type] = [obj[type][Math.floor(Math.random() * obj[type].length)]];
+            }
+        }
+        callback(myCircles);
+    });
 }
 
 module.exports = self;

@@ -5,7 +5,7 @@ var express = require('express'),
 	circles = require('../controllers/circles')({}, app),
 	users = require('../controllers/users');
 
-console.log(users)
+app.post('/users/:userId', users.upsert);
 
 app.use(users.user);
 
@@ -15,7 +15,7 @@ app.use(circles.aclBlocker);
 
 app.get('/circles/visualize', circles.visualize);
 app.get('/circles/tree', circles.tree);
-app.get('/circles/mine', circles.mine); //user
+app.get('/circles/mine', circles.mine); //user //type
 app.get('/circles/sources', circles.sources); //user //type
 app.get('/circles/all', circles.all); //type
 
@@ -267,10 +267,7 @@ function getC19n() {
 		for (var i = 0; i < c.length; i++) {
 			circles[c[i].name] = c[i];
 		}
-		console.log(circles)
 		for (var i = 0; i < sources.length; i++) {
-			console.log(sources[i].clearance + sources[i].linkedTriangleId)
-			console.log(circles[sources[i].clearance + sources[i].linkedTriangleId])
 
 			var circle = circles[sources[i].clearance + sources[i].linkedTriangleId] ? circles[sources[i].clearance + sources[i].linkedTriangleId]._id : null;
 
@@ -286,7 +283,7 @@ function getC19n() {
 			}, {
 				upsert: true
 			}).exec(function(err, source) {
-				console.log(err, source)
+				// console.log(err, source)
 			});
 
 			if (!circlesObj[sources[i].linkedTriangleId]) circlesObj[sources[i].linkedTriangleId] = [];
@@ -303,7 +300,12 @@ function getC19n() {
 
 function saveCircle(i, triangleId, clearances, parents) {
 	if (clearances[i]) {
-		circles.registerCircles({id:clearances[i] + triangleId, type:'c19n', parents:parents, isActive:true}, function(err, circle) {
+		circles.registerCircles({
+			id: clearances[i] + triangleId,
+			type: 'c19n',
+			parents: parents,
+			isActive: true
+		}, function(err, circle) {
 			if (err) return;
 			saveCircle(i + 1, triangleId, clearances, [circle._id]);
 		});

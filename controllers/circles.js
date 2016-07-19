@@ -458,7 +458,7 @@ module.exports = function(Circles, app) {
 				isActive: circle.isActive,
 				circleId: circle.id
 			};
-			
+
 			if (circle.name) {
 				query.name = circle.name;
 			}
@@ -524,12 +524,17 @@ function getSources(req, callback) {
 	var conditions = {};
 	var type = req.query.type || 'c19n';
 	conditions.circleType = type;
-	if (req.query.user)
-		conditions.circleName = {
-			$in: req.acl.user.allowed[type].map(function(circle) {
+	if (req.query.user) {
+		var circles = [];
+		if (req.acl.user.allowed[type]) {
+			circles = req.acl.user.allowed[type].map(function(circle) {
 				return circle.name
-			})
+			});
+		}
+		conditions.circleName = {
+			$in: circles
 		};
+	}
 	Source.find(conditions).exec(function(err, sources) {
 		callback(sources);
 	});
