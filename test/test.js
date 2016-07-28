@@ -5,41 +5,26 @@ var request = require('supertest');
 var mongoose = require('mongoose');
 var winston = require('winston');
 var config = require(process.cwd() + '/config') || {};
-console.log(config.db);
 
 mongoose.connect(config.db);
 var conn = mongoose.connection;
 
 var drop = function(table, cb) {
     conn.collection(table).drop(function(err, doc) {
-        console.log(err, doc)
         if (err) return cb(err)
         cb(null, doc);
     })
 }
 
 var create = function(id, cb) {
-    console.log('db');
-    conn.collection('users').insert({ id: id }, function(err, doc) {
-        console.log(err, doc)
+    conn.collection('users').insert({ id: id }, function(err, user) {
         if (err) return cb(err)
-        cb(null, doc._id);
+        cb(null, user._id);
     })
 }
 
-var findUser = function(id, circleId, cb) {
-    console.log('db');
-    conn.collection('users').find({ id: id, 'circles.personal': circleId }, { 'circles.personal.$': true }, function(err, doc) {
-        console.log(err, doc)
-        if (err) return cb(err)
-        cb(null, doc._id);
-    })
-}
-
-var findCircle = function(name, cb) {
-    console.log('db');
-    conn.collection('circles').find({ name: name }, { 'circles/personal/addUser.$': true }, function(err, doc) {
-        console.log(err, doc)
+var findUser = function(userId, circleId, cb) {
+    conn.collection('users').find({ id: userId, 'circles.personal': circleId }, { 'circles.personal.$': true }, function(err, doc) {
         if (err) return cb(err)
         cb(null, doc._id);
     })
@@ -50,18 +35,20 @@ describe('Routing', function() {
     before(function(done) {
         drop('circles', function() {
             drop('users', function() {
-                create('a', function() {});
-                create('test', function() {});
-                create('f', function() {});
+                create('userTest', function() {});
+                create('user1', function() {});
+                create('user2', function() {});
+                create('user3', function() {});
                 done();
             });
         });
     });
 
     describe('Personal', function() {
+        var circleId;
         it('should return error if no name', function(done) {
             var circle = {
-                creator: 'test',
+                creator: 'userTest',
                 users: [],
                 managers: []
             };
@@ -70,7 +57,6 @@ describe('Routing', function() {
                 .post('/api/v1/circles/personal')
                 .send(circle)
                 .end(function(err, res) {
-                    console.log(res.error);
                     if (err) {
                         throw err;
                     }
@@ -79,18 +65,17 @@ describe('Routing', function() {
                 });
         });
 
-        it('should return error if the manager is not existing in users', function(done) {
+        it('should return error if the manager is not existing in the system', function(done) {
             var circle = {
-                creator: 'test',
-                name: 'test',
-                users: ['a', 'f'],
-                managers: ['f', 'j']
+                creator: 'userTest',
+                name: 'circleTest',
+                users: ['user1', 'user2'],
+                managers: ['user3', 'no user']
             };
             request(url)
                 .post('/api/v1/circles/personal')
                 .send(circle)
                 .end(function(err, res) {
-                    console.log(res.body.users, res.error);
                     if (err) {
                         throw err;
                     }
@@ -99,26 +84,43 @@ describe('Routing', function() {
                 });
         });
 
-        it('should save all users if they are existing', function(done) {
+        it('should return error if the user is not existing in the system', function(done) {
             var circle = {
-                creator: 'test',
-                name: 'test',
-                users: ['a', 'f'],
-                managers: ['f']
+                creator: 'userTest',
+                name: 'circleTest',
+                users: ['user1', 'user2', 'no user'],
+                managers: ['user3']
             };
             request(url)
                 .post('/api/v1/circles/personal')
                 .send(circle)
                 .end(function(err, res) {
-                    console.log(res.body.users, res.error);
+                    if (err) {
+                        throw err;
+                    }
+                    assert.equal(res.status, 500)
+                    done();
+                });
+        });
+
+        it('should return passed and save all users if they are existing', function(done) {
+            var circle = {
+                creator: 'userTest',
+                name: 'circleTest',
+                users: ['user1', 'user2'],
+                managers: ['user3']
+            };
+            request(url)
+                .post('/api/v1/circles/personal')
+                .send(circle)
+                .end(function(err, res) {
                     if (err) {
                         throw err;
                     }
                     assert.equal(res.status, 200)
-                    assert.equal(res.body.creator.id, 'test');
+                    assert.equal(res.body.creator.id, 'userTest');
                     circle.managers.push(circle.creator);
                     for (var i = 0; i < res.body.users.length; i++) {
-
                         if (res.body.users[i].role == 'manager') {
                             assert.oneOf(res.body.users[i].user.id, circle.managers);
                         } else {
@@ -133,7 +135,7 @@ describe('Routing', function() {
 
         it('should return error if no creator', function(done) {
             var circle = {
-                name: 'test',
+                name: 'circleTest',
                 users: [],
                 managers: []
             };
@@ -141,7 +143,6 @@ describe('Routing', function() {
                 .post('/api/v1/circles/personal')
                 .send(circle)
                 .end(function(err, res) {
-                    console.log(res.error);
                     if (err) {
                         throw err;
                     }
@@ -150,10 +151,10 @@ describe('Routing', function() {
                 });
         });
 
-        it('should add the circle to the user', function(done) {
+        it('should return passed if added circle to the user', function(done) {
             var circle = {
-                creator: 'test',
-                name: 'test',
+                creator: 'userTest',
+                name: 'circleTest1',
                 users: [],
                 managers: []
             };
@@ -161,7 +162,29 @@ describe('Routing', function() {
                 .post('/api/v1/circles/personal')
                 .send(circle)
                 .end(function(err, res) {
-                    console.log(res.body.users);
+                    if (err) {
+                        throw err;
+                    }
+                    assert.equal(res.status, 200)
+                    circleId = res.body._id;
+                    for (var i = res.body.users.length - 1; i >= 0; i--) {
+                        findUser(res.body.users[i].user.id, res.body._id, function(error, id) {
+                            assert.isNotNull(id);
+                        });
+                    }
+                    done();
+                });
+        });
+
+        it('should return passed if the circle added to the user after creating a circle', function(done) {
+            var user = {
+                user: 'user1',
+                role: 'manager'
+            };
+            request(url)
+                .put('/api/v1/circles/personal/' + circleId + '/addUser?user=userTest')
+                .send(user)
+                .end(function(err, res) {
                     if (err) {
                         throw err;
                     }
@@ -171,7 +194,138 @@ describe('Routing', function() {
                             assert.isNotNull(id);
                         });
                     }
+                    var users = res.body.users.map(function(user) {
+                        return (user.user.id);
+                    });
+                    assert.oneOf(user.user, users);
+                    done();
+                });
+        });
 
+        it('should return error after adding user to circle by user', function(done) {
+            var user2 = {
+                user: 'user1',
+                role: 'user'
+            };
+            request(url)
+                .put('/api/v1/circles/personal/' + circleId + '/addUser?user=user2')
+                .send(user2)
+                .end(function(err, res) {
+                    if (err) {
+                        throw err;
+                    }
+                    assert.equal(res.status, 500)
+                    done();
+                });
+        });
+
+        it('should return error after adding an existing user', function(done) {
+            var user3 = {
+                user: 'user1',
+                role: 'user'
+            };
+            request(url)
+                .put('/api/v1/circles/personal/' + circleId + '/addUser?user=userTest')
+                .send(user3)
+                .end(function(err, res) {
+                    if (err) {
+                        throw err;
+                    }
+                    assert.equal(res.status, 500)
+                    done();
+                });
+        });
+
+        it('should return error after adding to circle user does’t exist in the system', function(done) {
+            var user4 = {
+                user: 'noUserTest',
+                role: 'user'
+            };
+            request(url)
+                .put('/api/v1/circles/personal/' + circleId + '/addUser?user=userTest')
+                .send(user4)
+                .end(function(err, res) {
+                    if (err) {
+                        throw err;
+                    }
+                    assert.equal(res.status, 500)
+                    done();
+                });
+        });
+
+        it('should return error after removing a user from the circle by user', function(done) {
+            var user2 = {
+                user: 'user1',
+                role: 'user'
+            };
+            request(url)
+                .put('/api/v1/circles/personal/' + circleId + '/removeUser?user=user2')
+                .send(user2)
+                .end(function(err, res) {
+                    if (err) {
+                        throw err;
+                    }
+                    assert.equal(res.status, 500)
+                    done();
+                });
+        });
+
+        it('should return passed after removing a user from the circle by manager', function(done) {
+            var user = {
+                user: 'user1',
+                role: 'manager'
+            };
+            request(url)
+                .put('/api/v1/circles/personal/' + circleId + '/removeUser?user=userTest')
+                .send(user)
+                .end(function(err, res) {
+                    if (err) {
+                        throw err;
+                    }
+                    assert.equal(res.status, 200)
+                    for (var i = res.body.users.length - 1; i >= 0; i--) {
+                        findUser(res.body.users[i].user.id, res.body._id, function(error, id) {
+                            assert.isNotNull(id);
+                        });
+                    }
+                    var users = res.body.users.map(function(user) {
+                        return (user.user.id);
+                    });
+                    assert.notInclude(user.user, users);
+                    done();
+                });
+        });
+
+        it('should return error after removing an existing user', function(done) {
+            var user3 = {
+                user: 'not existing',
+                role: 'user'
+            };
+            request(url)
+                .put('/api/v1/circles/personal/' + circleId + '/addUser?user=userTest')
+                .send(user3)
+                .end(function(err, res) {
+                    if (err) {
+                        throw err;
+                    }
+                    assert.equal(res.status, 500)
+                    done();
+                });
+        });
+
+        it('should return error after removing an user by himself', function(done) {
+            var user3 = {
+                user: 'userTest',
+                role: 'manager'
+            };
+            request(url)
+                .put('/api/v1/circles/personal/' + circleId + '/addUser?user=userTest')
+                .send(user3)
+                .end(function(err, res) {
+                    if (err) {
+                        throw err;
+                    }
+                    assert.equal(res.status, 500)
                     done();
                 });
         });
