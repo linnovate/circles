@@ -302,7 +302,7 @@ describe('Routing', function() {
                 role: 'user'
             };
             request(url)
-                .put('/api/v1/circles/personal/' + circleId + '/addUser?user=userTest')
+                .put('/api/v1/circles/personal/' + circleId + '/removeUser?user=userTest')
                 .send(user3)
                 .end(function(err, res) {
                     if (err) {
@@ -319,7 +319,7 @@ describe('Routing', function() {
                 role: 'manager'
             };
             request(url)
-                .put('/api/v1/circles/personal/' + circleId + '/addUser?user=userTest')
+                .put('/api/v1/circles/personal/' + circleId + '/removeUser?user=userTest')
                 .send(user3)
                 .end(function(err, res) {
                     if (err) {
