@@ -46,7 +46,7 @@ var self = {
     },
     checkUsers: function(req, res, next) {
         if (!req.body.users) req.body.users = [];
-        if (req.body.users.length || req.body.managers.length > config.settings.maxUsers) return res.status(500).json({
+        if (req.body.users.length > config.settings.maxUsers || req.body.managers.length > config.settings.maxUsers) return res.status(500).json({
             error: config.errors.maxUsers + config.settings.maxUsers
         });
 
