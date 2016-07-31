@@ -528,10 +528,10 @@ function getSources(req, callback) {
 		var circles = [];
 		if (req.acl.user.allowed[type]) {
 			circles = req.acl.user.allowed[type].map(function(circle) {
-				return circle.name
+				return circle._id
 			});
 		}
-		conditions.circleName = {
+		conditions.circle = {
 			$in: circles
 		};
 	}

@@ -73,7 +73,6 @@ function getGoogleGroups() {
 	service.sdkManager('groups', 'list', {
 		domain: 'linnovate.net',
 	}, function(err, list) {
-		console.log(err)
 		if (!err && list.groups) {
 			var obj = list.groups.reduce(function(o, v) {
 				o[v.id] = v;
@@ -120,7 +119,7 @@ function getC19nGroups() {
 		id: '91274',
 		name: 'g5',
 		type: 'c19nGroups2',
-		isActive: false
+		isActive: true
 	}, {
 		id: '91284',
 		name: 'g6',
@@ -265,12 +264,10 @@ function getC19n() {
 	}).exec(function(err, c) {
 		var circles = {};
 		for (var i = 0; i < c.length; i++) {
-			circles[c[i].name] = c[i];
+			circles[c[i].circleId] = c[i];
 		}
 		for (var i = 0; i < sources.length; i++) {
-
 			var circle = circles[sources[i].clearance + sources[i].linkedTriangleId] ? circles[sources[i].clearance + sources[i].linkedTriangleId]._id : null;
-
 			Source.findOneAndUpdate({
 				sourceId: sources[i].id
 			}, {
