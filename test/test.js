@@ -5,7 +5,6 @@ var request = require('supertest');
 var mongoose = require('mongoose');
 var winston = require('winston');
 var config = require(process.cwd() + '/config') || {};
-console.log(config)
 mongoose.connect(config.db);
 var conn = mongoose.connection;
 var max = 0;
@@ -18,7 +17,6 @@ var drop = function(table, cb) {
 }
 
 var create = function(id, cb) {
-    // console.log('id:', id)
     conn.collection('users').insert({ id: id }, function(err, user) {
         if (err) return cb(err)
         cb(null, user._id);
@@ -42,7 +40,6 @@ describe('Routing', function() {
                 for (var i = 0; i < config.settings.maxUsers + 2; i++) {
                     create('user' + i, function() {
                         c++;
-                        // console.log(c, config.settings.maxUsers + 2)
                         if (c === config.settings.maxUsers + 2) {
                             done();
                         }
@@ -54,7 +51,8 @@ describe('Routing', function() {
     });
 
     describe('Personal', function() {
-        var circleId,circleIdMax;
+        var circleId, circleIdMax;
+        var arrayName = [];
 
         it('should return error if no name', function(done) {
             var circle = {
@@ -355,7 +353,6 @@ describe('Routing', function() {
                 .post('/api/v1/circles/personal')
                 .send(circle)
                 .end(function(err, res) {
-                    // console.log(res.body.users, res.error);
                     if (err) {
                         throw err;
                     }
@@ -376,25 +373,15 @@ describe('Routing', function() {
             for (var i = 0; i < config.settings.maxUsers - 1; i++) {
                 circle.users.push('user' + i);
             }
-
-            console.log(circle.users);
-            console.log(config.settings.maxUsers)
             request(url)
-
-            .post('/api/v1/circles/personal')
+                .post('/api/v1/circles/personal')
                 .send(circle)
                 .end(function(err, res) {
-                    // console.log(res.body.users, res.error);
                     if (err) {
                         throw err;
                     }
-                    // console.log(res.body.users)
-                    console.log(res.body._id,"res.body._id")
                     assert.equal(res.status, 200)
-
                     circleIdMax = res.body._id;
-
-                    // assert.equal(res.error.text, '{"error":"max users ' + config.settings.maxUsers + '"}')
                     done();
                 });
         });
@@ -410,21 +397,15 @@ describe('Routing', function() {
                 circle.users.push('user' + i);
             }
 
-            console.log(circle.users);
-            console.log(config.settings.maxUsers)
             request(url)
 
             .post('/api/v1/circles/personal')
                 .send(circle)
                 .end(function(err, res) {
-                    // console.log(res.body.users, res.error);
                     if (err) {
                         throw err;
                     }
-                    console.log(res.body.users)
                     assert.equal(res.status, 500)
-
-                    // assert.equal(res.error.text, '{"error":"max users ' + config.settings.maxUsers + '"}')
                     done();
                 });
         });
@@ -443,7 +424,6 @@ describe('Routing', function() {
                 .post('/api/v1/circles/personal')
                 .send(circle)
                 .end(function(err, res) {
-                    // console.log(res.body.users, res.error);
                     if (err) {
                         throw err;
                     }
@@ -454,7 +434,6 @@ describe('Routing', function() {
         });
 
         it('should return error after creating a circle with more managers and users than maxUsers', function(done) {
-            var arrayName = [];
             var circle = {
                 creator: 'userTest',
                 name: 'circleTest',
@@ -470,13 +449,10 @@ describe('Routing', function() {
             var rightSide = arrayName;
             circle.managers = leftSide;
             circle.users = rightSide;
-            // console.log(circle.managers, 'circle.managers')
-            // console.log(circle.users, 'circle.users')
             request(url)
                 .post('/api/v1/circles/personal')
                 .send(circle)
                 .end(function(err, res) {
-                    // console.log(res.body.users, res.error);
                     if (err) {
                         throw err;
                     }
@@ -487,7 +463,47 @@ describe('Routing', function() {
         });
 
         it('should return error after adding more users than maxUsers', function(done) {
-            console.log(circleIdMax, 'circleIdMax')
+            var user = {
+                user: 'user' + config.settings.maxUsers,
+                role: 'user'
+            };
+
+            request(url)
+                .put('/api/v1/circles/personal/' + circleIdMax + '/addUser?user=userTest')
+                .send(user)
+                .end(function(err, res) {
+
+                    if (err) {
+                        throw err;
+                    }
+                    assert.equal(res.status, 500)
+                    assert.equal(res.error.text, '{"error":"max users ' + config.settings.maxUsers + '"}')
+                    done();
+                });
+        });
+
+        it('should return error after adding more managers than maxUsers', function(done) {
+
+            var user = {
+                user: 'user' + config.settings.maxUsers,
+                role: 'manager'
+            };
+
+            request(url)
+                .put('/api/v1/circles/personal/' + circleIdMax + '/addUser?user=userTest')
+                .send(user)
+                .end(function(err, res) {
+
+                    if (err) {
+                        throw err;
+                    }
+                    assert.equal(res.status, 500)
+                    assert.equal(res.error.text, '{"error":"max users ' + config.settings.maxUsers + '"}')
+                    done();
+                });
+        });
+
+        it('should return error after adding users = maxUsers', function(done) {
 
             var user = {
                 user: 'user' + config.settings.maxUsers,
@@ -498,12 +514,50 @@ describe('Routing', function() {
                 .put('/api/v1/circles/personal/' + circleIdMax + '/addUser?user=userTest')
                 .send(user)
                 .end(function(err, res) {
-                    // console.log(res.body.users, res.error);
+
                     if (err) {
                         throw err;
                     }
                     assert.equal(res.status, 500)
                     assert.equal(res.error.text, '{"error":"max users ' + config.settings.maxUsers + '"}')
+                    done();
+                });
+        });
+
+        it('should return passed after removing user', function(done) {
+
+            var user = {
+                user: 'user0',
+                role: 'user'
+            };
+
+            request(url)
+                .put('/api/v1/circles/personal/' + circleIdMax + '/removeUser?user=userTest')
+                .send(user)
+                .end(function(err, res) {
+                    if (err) {
+                        throw err;
+                    }
+                    assert.equal(res.status, 200)
+                    done();
+                });
+        });
+
+        it('should return passed after adding users = maxUsers - 1 (withot creator)', function(done) {
+
+            var user = {
+                user: 'user0',
+                role: 'user'
+            };
+
+            request(url)
+                .put('/api/v1/circles/personal/' + circleIdMax + '/addUser?user=userTest')
+                .send(user)
+                .end(function(err, res) {
+                    if (err) {
+                        throw err;
+                    }
+                    assert.equal(res.status, 200)
                     done();
                 });
         });
