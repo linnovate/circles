@@ -2,5 +2,6 @@
 
 module.exports = {
 	templateEngine: 'swig',
-	version: 'v1'
+	version: 'v1',
+	activeProvider: ''
 };

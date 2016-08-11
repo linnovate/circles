@@ -487,6 +487,19 @@ module.exports = function(Circles, app) {
 			getSources(req, function(sources) {
 				res.json(sources);
 			});
+		},
+		getCorporateGroupsForUser: function(req, res, next) {
+			require('../helpers')(config.activeProvider, app).getCorporateGroupsForUser(req.params.userId, function(groups) {
+				Circle.distinct('_id', {
+					circleId: {
+						$in: groups
+					},
+					circleType: 'corporate'
+				}).exec(function(err, ids) {
+					req.groups = ids;
+					next();
+				});
+			});
 		}
 	}
 
