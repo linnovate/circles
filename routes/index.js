@@ -3,9 +3,10 @@
 var express = require('express'),
 	app = express(),
 	circles = require('../controllers/circles')({}, app),
-	users = require('../controllers/users');
+	users = require('../controllers/users'),
+	config = require(process.cwd() + '/config') || {};
 
-app.post('/users/:userId', users.upsert);
+app.post('/users/:userId', users.upsert, circles.getCorporateGroupsForUser, users.setCorporateGroupsForUser);
 
 app.use(users.user);
 
@@ -38,61 +39,11 @@ app.param('id', circles.circle);
 
 module.exports = app;
 
-
-
-// getGoogleGroups();
+require('../helpers')(config.activeProvider, app).getCorporateGroups();
 
 getC19n();
 
 getC19nGroups();
-
-
-
-function getGoogleGroups() {
-	var GoogleService = require('serviceproviders')('google');
-	var service = new GoogleService(config.google.clientSecret, config.google.clientID, config.google.callbackURL);
-
-	var getMembers = function(group, rv, cb) {
-		service.sdkManager('members', 'list', {
-			groupKey: group.email
-		}, function(err, list) {
-			if (!list || !list.members) {
-				return (cb());
-
-			}
-			var filter = list.members.filter(function(member) {
-				return member.type === 'GROUP'
-			});
-			for (var i = 0; i < filter.length; i++) {
-				circles.registerCircles(group.name, 'groups', [rv[filter[i].id].name]);
-			}
-			cb();
-		})
-	};
-
-	service.sdkManager('groups', 'list', {
-		domain: 'linnovate.net',
-	}, function(err, list) {
-		if (!err && list.groups) {
-			var obj = list.groups.reduce(function(o, v) {
-				o[v.id] = v;
-				return o;
-			}, {});
-			var counter = list.groups.length;
-			for (var i = 0; i < list.groups.length; i++) {
-				getMembers(list.groups[i], obj, function() {
-					counter--;
-					if (counter === 0) {
-						for (var i = 0; i < list.groups.length; i++) {
-							circles.registerCircles(list.groups[i].name, 'groups');
-						}
-					}
-				})
-
-			}
-		}
-	})
-};
 
 function getC19nGroups() {
 	var groups = [{
