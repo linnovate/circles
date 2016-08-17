@@ -121,7 +121,7 @@ function buildTree(data, id, branch) {
   var length = branch.length;
 
   branch.push({
-    name: data[id].name,
+    name: data[id].name || data[id].circleId,
     isActive: data[id].isActive
   });
 
@@ -137,7 +137,7 @@ function buildTree(data, id, branch) {
     if (id !== child && data[child]) {
       if (noParents(data, child)) {
         branch[length].children.push({
-          name: data[child].name,
+          name: data[child].name || data[child].circleId,
           size: 1
         });
       } else {

@@ -22,6 +22,7 @@
     "static-favicon": "^2.0.0-alpha",
     "swagger-node-express": "^2.1.3",
     "swig": "^1.4.2",
-    "util": "^0.10.3"
+    "util": "^0.10.3",
+    "npm-getdata-pkg": "/home/noy/devel/npm-getData-pkg"
   }
 }

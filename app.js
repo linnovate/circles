@@ -16,7 +16,7 @@ var app = express();
 // var passport = require('passport');
 
 var consolidate = require('consolidate');
-
+require('./initData')(app);
 require('./swagger/swagger')(app);
 
 app.use(favicon());
