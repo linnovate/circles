@@ -46,7 +46,7 @@ var self = {
     },
     checkUsers: function(req, res, next) {
         if (!req.body.users) req.body.users = [];
-        if (req.body.users.length > config.settings.maxUsers) return res.status(500).json({
+        if (req.body.users.length > config.settings.maxUsers || req.body.managers.length > config.settings.maxUsers) return res.status(500).json({
             error: config.errors.maxUsers + config.settings.maxUsers
         });
 
@@ -98,6 +98,9 @@ var self = {
                         });
                     }
                 }
+                if (req.body.users.length > config.settings.maxUsers) return res.status(500).json({
+                    error: config.errors.maxUsers + config.settings.maxUsers
+                });
                 next();
             });
         });
@@ -150,15 +153,17 @@ var self = {
         });
         res.json(req.circle);
     },
-    upsert: function(req, res) {
+    upsert: function(req, res, next) {
         User.findOne({
             id: req.params.userId
         }, function(err, user) {
-            if (err || user) {
-                res.json({
-                    err: err,
-                    user: user
-                })
+            if (err) {
+                return res.status(500).json({
+                    error: err
+                });
+            }
+            if (user) {
+                return next();
             } else {
                 getRandomCircles(function(circles) {
                     var user = new User({
@@ -166,14 +171,30 @@ var self = {
                         circles: circles
                     });
                     user.save(function(err, user) {
-                        res.json({
-                            err: err,
-                            user: user
-                        });
+                        if (err) {
+                            return res.status(500).json({
+                                error: err
+                            });
+                        }
+                        if (user) {
+                            return next();
+                        }
                     });
                 });
             }
         });
+    },
+    setCorporateGroupsForUser: function(req, res) {
+        User.findOneAndUpdate({
+            id: req.params.userId
+        }, {
+            'circles.corporate': req.groups
+        }, {
+            new: true
+        }, function(err, user) {
+            console.log(err, user)
+            res.json(user);
+        })
     }
     // ,
     // renameCircleOfUsers: function(req, res, next) {

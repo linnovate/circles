@@ -12,7 +12,7 @@ process.env.NODE_ENV = ~fs.readdirSync(__dirname + '/env').map(function(file) {
 module.exports = _.extend(
     require('./env/common'),
     require('./env/' + process.env.NODE_ENV) || {},
-    require('./actionSettings') || {},
+    require('./settings') || {},
     require('./messages') || {}
 
 );

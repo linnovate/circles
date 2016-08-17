@@ -5,7 +5,7 @@ var express = require('express'),
 	circles = require('../controllers/circles')({}, app),
 	users = require('../controllers/users');
 
-app.post('/users/:userId', users.upsert);
+app.post('/users/:userId', users.upsert, circles.getCorporateGroupsForUser, users.setCorporateGroupsForUser);
 
 app.use(users.user);
 
