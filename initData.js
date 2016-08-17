@@ -111,6 +111,9 @@ module.exports = function(app) {
                                 userToAdd.circles.c19n.push(circle._id);
                                 c++;
                             }
+                            if (c == user.PublishProcedureAllow.length + user.TrianglesAllow.length){
+                                User.findOneAndUpdate({id: userToAdd.id}, userToAdd, {upsert:true}, function(){})
+                            }
                         });
                     }
                     
@@ -121,7 +124,8 @@ module.exports = function(app) {
                                 c++;
                             }
                             if (c == user.PublishProcedureAllow.length + user.TrianglesAllow.length){
-                                User.findOneAndUpdate({id: user.uniqueId}, userToAdd, {upsert:true}, function(){})
+                                User.findOneAndUpdate({id: userToAdd.id}, userToAdd, {upsert:true}, function(a,b){
+                                })
                             }
                         });															
                     }
