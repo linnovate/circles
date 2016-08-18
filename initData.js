@@ -29,49 +29,47 @@ module.exports = function(app) {
         });
     };
 
-
     function getC19n() {
         getData.getSources(function(sources){
-
             var circlesObj = {};
-
-            Circle.find({
-                circleType: 'c19n'
-            }).exec(function(err, c) {
-                var circles = {};
-                for (var i = 0; i < c.length; i++) {
-                    circles[c[i].circleId] = c[i];
-                }
-                for (var i = 0; i < sources.length; i++) {
-                    var circle = circles['' +sources[i].Clearance + sources[i].LinkedTriangleId] ? circles[ '' + sources[i].Clearance + sources[i].LinkedTriangleId]._id : null;
-                    Source.findOneAndUpdate({
-                        sourceId: sources[i].Id
-                    }, {
-                        sourceId: sources[i].Id,
-                        name: sources[i].Name,
-                        circleName: '' + sources[i].Clearance + sources[i].LinkedTriangleId,
-                        circleType: 'c19n',
-                        circle: circle,
-                        classification: sources[i].Classification
-                    }, {
-                        upsert: true
-                    }).exec(function(err, source) {
-                    });
-
-                    if (!circlesObj[sources[i].LinkedTriangleId]) circlesObj[sources[i].LinkedTriangleId] = [];
-                    if (circlesObj[sources[i].LinkedTriangleId].indexOf(sources[i].Clearance.toString()) < 0)
-                        circlesObj[sources[i].LinkedTriangleId].push(sources[i].Clearance.toString())
-                }
-                for (var triangleId in circlesObj) {
-                    var clearances = circlesObj[triangleId].sort().reverse();
-                    saveCircle(0, triangleId, clearances, null);
-                }
-            });
+            for (var i = 0; i < sources.length; i++) {
+    
+                if (!circlesObj[sources[i].LinkedTriangleId]) circlesObj[sources[i].LinkedTriangleId] = {clearances: [], sources:{}};
+                if (circlesObj[sources[i].LinkedTriangleId].clearances.indexOf(sources[i].Clearance.toString()) < 0)
+                    circlesObj[sources[i].LinkedTriangleId].clearances.push(sources[i].Clearance.toString())
+                
+                if (!circlesObj[sources[i].LinkedTriangleId].sources[sources[i].Clearance.toString()])
+                    circlesObj[sources[i].LinkedTriangleId].sources[sources[i].Clearance.toString()] = [];
+                circlesObj[sources[i].LinkedTriangleId].sources[sources[i].Clearance.toString()].push(sources[i]);
+            }
+            for (var triangleId in circlesObj) {
+                var clearances = circlesObj[triangleId].clearances.sort().reverse();
+                saveCircle(0, triangleId, clearances, circlesObj[triangleId].sources, null);
+            }
+           
         });
 
     }
+    
+    function saveSources(circle, sources) {
+        for (var i = 0; i < sources.length; i++) {
+            Source.findOneAndUpdate({
+                sourceId: sources[i].Id
+            }, {
+                sourceId: sources[i].Id,
+                name: sources[i].Name,
+                circleName: '' + sources[i].Clearance + sources[i].LinkedTriangleId,
+                circleType: 'c19n',
+                circle: circle,
+                classification: sources[i].Classification
+            }, {
+                upsert: true
+            }).exec(function(err, source) {
+            });
+        }
+    }
 
-    function saveCircle(i, triangleId, clearances, parents) {
+    function saveCircle(i, triangleId, clearances, sources, parents) {
         if (clearances[i]) {
             circles.registerCircles({
                 id: '' + clearances[i] + triangleId,
@@ -80,7 +78,8 @@ module.exports = function(app) {
                 isActive: true
             }, function(err, circle) {
                 if (err) return;
-                saveCircle(i + 1, triangleId, clearances, [circle._id]);
+                saveSources(circle, sources[clearances[i]])
+                saveCircle(i + 1, triangleId, clearances, sources, [circle._id]);
             });
         }
     }
