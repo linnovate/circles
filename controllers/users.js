@@ -230,7 +230,7 @@ var getRandomCircles = function(callback) {
         }
         var myCircles = {};
         for (var type in config.settings.circleTypes) {
-            if (type !== 'personal') {
+            if (type !== 'personal' && obj[type]) {
                 myCircles[type] = [obj[type][Math.floor(Math.random() * obj[type].length)]];
             }
         }
