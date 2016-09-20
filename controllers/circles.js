@@ -310,18 +310,19 @@ module.exports = function(Circles, app) {
 			});
 		},
 		all: function(req, res) {
-			var tree, circles;
+			// var tree;
+			var circles;
 			if (req.query.type) {
-				tree = req.acl.tree.children.find(function(type) {
-					return (type.name === req.query.type);
-				});
+				// tree = req.acl.tree.children.find(function(type) {
+				// 	return (type.name === req.query.type);
+				// });
 				circles = req.acl.circles[req.query.type];
 			} else {
-				tree = req.acl.tree;
+				// tree = req.acl.tree;
 				circles = req.acl.circles;
 			}
 			return res.json({
-				tree: tree,
+				// tree: tree,
 				circles: circles
 			});
 		},
@@ -455,7 +456,6 @@ module.exports = function(Circles, app) {
 			if (typeof(isActive) !== 'boolean') isActive = true;
 			var query = {
 				circleType: circle.type,
-				isActive: circle.isActive,
 				circleId: circle.id
 			};
 
