@@ -9,6 +9,7 @@ var UserSchema = new Schema({
   updated: Date,
   circles: {},
   displayName: String,
+  fullName: String,
   classification: Number
 });
 

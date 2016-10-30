@@ -12,6 +12,7 @@ module.exports = {
 			personal: {},
 			corporate: {}
 		},
-		maxUsers: 20
+		maxUsers: 20,
+		defaultClearances: ['0', '1', '2', '3', '4']
 	}
 };
