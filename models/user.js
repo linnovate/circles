@@ -5,12 +5,13 @@ var mongoose = require('mongoose'),
 
 var UserSchema = new Schema({
   id: String,
-  created: Date,
-  updated: Date,
   circles: {},
   displayName: String,
   fullName: String,
-  classification: Number
+  classification: Number,
+  lastModified: {}
+}, {
+  timestamps: true
 });
 
 module.exports = mongoose.model('User', UserSchema);

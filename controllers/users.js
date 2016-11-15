@@ -1,5 +1,7 @@
 require('../models/user');
 
+var initData = require('../initData')();
+
 Array.prototype.diff = function(a) {
     return this.filter(function(i) {
         return a.indexOf(i) < 0;
@@ -17,10 +19,9 @@ var self = {
         if (!req.query.user) {
             return next();
         }
-        User.findOne({
-            id: req.query.user
-        }).exec(function(err, user) {
-            req.user = user;
+        self.checkUser(req.query.user, function(error, user) {
+            if (error) return next();
+            req.user = user;  
             next();
         });
     },
@@ -28,8 +29,14 @@ var self = {
         User.findOne({
             id: id
         }).exec(function(err, user) {
-            if (err || !user) return callback(true);
-            callback(null, user._id);
+            if (err) return callback(true);
+            if (!user || (new Date().getTime() - user.lastModified.initData.getTime())/(1000*60) > config.settings.modify.initData){
+                initData.initUser({uniqueId: id}, function(user) {
+                    callback(null, user);
+                })
+            } else {
+                callback(null, user);
+            }
         });
     },
     checkCreator: function(req, res, next) {
@@ -40,7 +47,7 @@ var self = {
                     error: config.errors.invalidCreator + req.body.creator
                 });
             }
-            req.body.creator = creator;
+            req.body.creator = creator._id;
             next();
         });
     },
@@ -49,23 +56,14 @@ var self = {
         if (req.body.users.length > config.settings.maxUsers || req.body.managers.length > config.settings.maxUsers) return res.status(500).json({
             error: config.errors.maxUsers + config.settings.maxUsers
         });
-
-        self.getUsers(req.body.users, function(err, users) {
+        self.getUsers(req.body.users, function(err, users, missingsU) {
             if (err) return res.status(500).json({
                 error: config.errors.invalidUsers
             });
-            var existUsers = users.map(function(user) {
-                return user.id;
-            });
-            var missingsU = req.body.users.diff(existUsers);
-            self.getUsers(req.body.managers, function(err, managers) {
+            self.getUsers(req.body.managers, function(err, managers, missingsM) {
                 if (err) return res.status(500).json({
                     error: config.errors.invalidUsers
                 });
-                var existManagers = managers.map(function(manager) {
-                    return manager.id;
-                });
-                var missingsM = req.body.managers.diff(existManagers);
                 if (missingsU.length || missingsM.length) {
                     return res.status(500).json({
                         error: config.errors.invalidUsers,
@@ -111,7 +109,30 @@ var self = {
                 $in: ids
             }
         }).exec(function(err, users) {
-            callback(err, users);
+            var usersIds = users.map(function(user) {
+                return user.id;
+            });
+            var missings = ids.diff(usersIds);
+             console.log("miss ",missings , "usersIds:" , usersIds, "ids: ", ids)
+             if(!missings.length) {
+                        callback(err, users, missings);
+                    }
+            var c = missings.length;
+            var news = [];
+            for(var i =0; i< missings.length; i++){
+                initMissingsUsers(missings[i], function(user) {
+                    if (user) {
+                        users.push(user);
+                        news.push(user.id);
+                    }
+                    c--;
+                    if(c ===0) {
+                        missings = missings.diff(news);
+                        callback(err, users, missings);
+                    }
+                    
+                });
+            }
         });
     },
     addCircleToUsers: function(req, res, next) {
@@ -236,6 +257,14 @@ var getRandomCircles = function(callback) {
         }
         callback(myCircles);
     });
+}
+
+var initMissingsUsers = function(missing, callback) {
+    
+
+    initData.initUser({uniqueId: missing}, function(user) {
+                    callback(user);
+                })
 }
 
 module.exports = self;

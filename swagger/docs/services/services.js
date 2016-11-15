@@ -121,7 +121,7 @@ exports.load = function(swagger) {
             description: 'Remove user from Circle',
             path: '/circles/personal/{id}/removeUser',
             method: 'Put',
-            summary: 'add user to circle',
+            summary: 'remove user to circle',
             notes: '',
             type: 'Circle',
             nickname: 'removeUserFromCircle',

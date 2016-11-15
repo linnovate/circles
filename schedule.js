@@ -12,9 +12,4 @@ module.exports = function(app) {
         console.log('init C19n data from scheduler');
         initData.getC19n();
     });
-    
-    schedule.scheduleJob('0 58 10 * * *', function(){
-        console.log('init Users data from scheduler');
-        initData.getUsers();
-    });
 }

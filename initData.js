@@ -6,7 +6,7 @@ var getData = require('npm-getdata-pkg'),
     config = require(process.cwd() + '/config') || {};
 module.exports = function(app) {
 
-    var circles = require('./controllers/circles')({}, app);
+    
     // getC19n();
 
     // getC19nGroups();
@@ -17,6 +17,7 @@ module.exports = function(app) {
 
     return {
         getC19nGroups: function() {
+            var circles = require('./controllers/circles')({}, app);
 
             getData.getC19nGroups(function(c19nGroups) {
                 for (var i = 0; i < c19nGroups.length; i++) {
@@ -61,12 +62,72 @@ module.exports = function(app) {
             });
         },
         
-        getUsers: function() {
-            getData.getUsers(function(users) {
-                for (var i = 0; i < users.length; i++) {
-                    initUser(users[i]);
+        // getUsers: function() {
+        //     getData.getUsers(function(users) {
+        //         for (var i = 0; i < users.length; i++) {
+        //             initUser(users[i]);
+        //         }
+        //     });
+        // },
+        
+        initUser: function(user, callback) {
+            var userToAdd = {};
+            userToAdd.id = user.uniqueId;
+            //userToAdd.displayName = user.displayName;
+            //userToAdd.fullName = user.fullName;
+            for (var i in config.settings.circleTypes) {
+                if (config.settings.circleTypes[i].initFrom === 'initData') {
+                    userToAdd['circles.' + i] = [];
                 }
-            });
+            }
+            userToAdd.lastModified = {
+                'initData': new Date()
+            }
+            getData.getUserPermission(userToAdd.id, function(user) {
+                if (!user) {
+                    return callback(null);
+                }
+                userToAdd.displayName = user.DisplayName;
+                var c = 0;
+                for (var j = 0; j < user.TrianglesAllow.length; j++) {
+                    getCircle('c19n', user.TrianglesAllow[j].TriangleClearance + "" + user.TrianglesAllow[j].TriangleId, function(circle) {
+                        if (circle) {
+                            userToAdd['circles.c19n'].push(circle._id);
+                            c++;
+                        }
+                        if (c == user.PublishProcedureAllow.length + user.TrianglesAllow.length) {
+                            User.findOneAndUpdate({
+                                id: userToAdd.id
+                            }, userToAdd, {
+                                upsert: true,
+                                new: true
+                            }, function(error, user) {
+                                callback(user);
+                            })
+                        }
+                    });
+                }
+
+                for (var j = 0; j < user.PublishProcedureAllow.length; j++) {
+                    getCircle(user.PublishProcedureAllow[j].PublishProcedureType, user.PublishProcedureAllow[j].PublishProcedureId, function(circle) {
+                        if (circle) {
+                            if (userToAdd['circles.'+circle.circleType])
+                                userToAdd['circles.'+circle.circleType].push(circle._id);
+                            c++;
+                        }
+                        if (c == user.PublishProcedureAllow.length + user.TrianglesAllow.length) {
+                            User.findOneAndUpdate({
+                                id: userToAdd.id
+                            }, userToAdd, {
+                                upsert: true,
+                                new: true
+                            }, function(error, user) {
+                                callback(user);
+                            })
+                        }
+                    });
+                }
+            })
         }
     }
     
@@ -88,6 +149,7 @@ module.exports = function(app) {
     }
 
     function saveCircle(i, triangleId, triangleName, clearances, sources, parents) {
+        var circles = require('./controllers/circles')({}, app);
         if (clearances[i]) {
             circles.registerCircles({
                 id: '' + clearances[i] + triangleId,
@@ -112,48 +174,5 @@ module.exports = function(app) {
         });
     }
 
-    function initUser(user) {
-        var userToAdd = {};
-        userToAdd.id = user.uniqueId;
-        userToAdd.displayName = user.displayName;
-        userToAdd.fullName = user.fullName;
-        userToAdd.circles = {};
-        userToAdd.circles.c19n = [];
-        userToAdd.circles.c19nGroups1 = [];
-        userToAdd.circles.c19nGroups2 = [];
-        getData.getUserPermission(userToAdd.id, function(user) {
-            var c = 0;
-            for (var j = 0; j < user.TrianglesAllow.length; j++) {
-                getCircle('c19n', user.TrianglesAllow[j].TriangleClearance + "" + user.TrianglesAllow[j].TriangleId, function(circle) {
-                    if (circle) {
-                        userToAdd.circles.c19n.push(circle._id);
-                        c++;
-                    }
-                    if (c == user.PublishProcedureAllow.length + user.TrianglesAllow.length) {
-                        User.findOneAndUpdate({
-                            id: userToAdd.id
-                        }, userToAdd, {
-                            upsert: true
-                        }, function() {})
-                    }
-                });
-            }
 
-            for (var j = 0; j < user.PublishProcedureAllow.length; j++) {
-                getCircle(user.PublishProcedureAllow[j].PublishProcedureType, user.PublishProcedureAllow[j].PublishProcedureId, function(circle) {
-                    if (circle) {
-                        userToAdd.circles[circle.circleType].push(circle._id);
-                        c++;
-                    }
-                    if (c == user.PublishProcedureAllow.length + user.TrianglesAllow.length) {
-                        User.findOneAndUpdate({
-                            id: userToAdd.id
-                        }, userToAdd, {
-                            upsert: true
-                        }, function(a, b) {})
-                    }
-                });
-            }
-        })
-    }
 }

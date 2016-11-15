@@ -32,23 +32,24 @@ var findUser = function(userId, circleId, cb) {
 
 describe('Routing', function() {
     var url = 'http://localhost:3006';
-    before(function(done) {
-        drop('circles', function() {
-            drop('users', function() {
-                create('userTest', function() {});
-                var c = 0;
-                for (var i = 0; i < config.settings.maxUsers + 2; i++) {
-                    create('user' + i, function() {
-                        c++;
-                        if (c === config.settings.maxUsers + 2) {
-                            done();
-                        }
-                    });
+    console.log( ' Check if you on test development and test db. If yes uncomment the lines and try again.')
+    // before(function(done) {
+    //     drop('circles', function() {
+    //         drop('users', function() {
+    //             create('userTest', function() {});
+    //             var c = 0;
+    //             for (var i = 0; i < config.settings.maxUsers + 2; i++) {
+    //                 create('user' + i, function() {
+    //                     c++;
+    //                     if (c === config.settings.maxUsers + 2) {
+    //                         done();
+    //                     }
+    //                 });
 
-                }
-            });
-        });
-    });
+    //             }
+    //         });
+    //     });
+    // });
 
     describe('Personal', function() {
         var circleId, circleIdMax;

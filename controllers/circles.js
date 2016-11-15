@@ -97,7 +97,7 @@ module.exports = function(Circles, app) {
 						error: config.errors.invalidUser + req.body.user
 					});
 				}
-				req.body.user = user;
+				req.body.user = user._id;
 				Circle.findOneAndUpdate({
 					_id: req.circle._id
 				}, {
@@ -156,7 +156,7 @@ module.exports = function(Circles, app) {
 						error: config.errors.invalidUser + req.body.user
 					});
 				}
-				req.body.user = user;
+				req.body.user = user._id;
 
 				// if (!req.user || (req.circle.manager._id.toString() !== req.user._id.toString()) &&
 				// 	(req.body.user.toString() !== req.user._id.toString())) return res.json(500, {
