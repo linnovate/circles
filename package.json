@@ -21,7 +21,7 @@
     "mongoose-deep-populate": "^3.0.0",
     "morgan": "^1.7.0",
     "node-schedule": "^1.2.0",
-    "npm-getdata-pkg": "git+https://github.com/noyg123/npm-getData.git",
+    "npm-getdata-pkg": "git+https://github.com/linnovate/circles-npm-getData.git",
     "serviceproviders": "^1.0.1",
     "static-favicon": "^2.0.0-alpha",
     "supertest": "^1.2.0",
